@@ -1,4 +1,4 @@
-package main
+package model
 
 import "time"
 
@@ -14,9 +14,9 @@ type Student struct {
 
 // POST — semua field wajib diisi saat pembuatan data baru
 type CreateStudentRequest struct {
-	NIM      string `json:"nim"`
-	Name     string `json:"name"`
-	Grade    string `json:"grade"`
+	NIM   string `json:"nim"`
+	Name  string `json:"name"`
+	Grade string `json:"grade"`
 }
 
 // PUT — mengganti seluruh isi, jadi semua field wajib
@@ -58,4 +58,9 @@ type ListQuery struct {
 	Sort     string
 	Order    string
 	IsActive *bool
+}
+
+// Offset menghitung berapa baris yang dilewati untuk halaman ini.
+func (q ListQuery) Offset() int {
+	return (q.Page - 1) * q.Limit
 }
