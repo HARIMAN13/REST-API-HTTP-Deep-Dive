@@ -12,19 +12,37 @@ import (
 	"api-students/middleware"
 )
 
-// Register memetakan URL ke method pada service.
-func Register(app *fiber.App, pool *pgxpool.Pool, studentService *service.StudentService) {
+type Dependencies struct {
+	Pool            *pgxpool.Pool
+	JWT             *helper.JWTManager
+	UserService     *service.StudentService
+	PrestasiService *service.PrestasiService
+	AuthService     *service.AuthService
+}
+
+func Register(app *fiber.App, deps Dependencies) {
 	api := app.Group("/api/v1")
 
-	api.Get("/health", healthCheck(pool))
+	// --- publik ---
+	api.Get("/health", healthCheck(deps.Pool))
 
-	students := api.Group("/students", middleware.RequireJSON)
-	students.Get("/", studentService.List)
-	students.Get("/:id", studentService.Get)
-	students.Post("/", studentService.Create)
-	students.Put("/:id", studentService.Replace)
-	students.Patch("/:id", studentService.Patch)
-	students.Delete("/:id", studentService.Delete)
+	// --- autentikasi ---
+	auth := api.Group("/auth", middleware.RequireJSON)
+	auth.Post("/register", deps.AuthService.Register)
+	auth.Post("/login", middleware.LoginRateLimiter(), deps.AuthService.Login)
+	auth.Post("/refresh", deps.AuthService.Refresh)
+	auth.Post("/logout", deps.AuthService.Logout)
+	auth.Get("/me", middleware.RequireAuth(deps.JWT), deps.AuthService.Me)
+
+	// --- wajib membawa access token ---
+	students := api.Group("/students", middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
+	students.Get("/", deps.UserService.List)
+	students.Get("/:id", deps.UserService.Get)
+	students.Get("/:id/prestasi", deps.PrestasiService.ListByStudentID)
+	students.Post("/", deps.UserService.Create)
+	students.Put("/:id", deps.UserService.Replace)
+	students.Patch("/:id", deps.UserService.Patch)
+	students.Delete("/:id", deps.UserService.Delete)
 }
 
 // healthCheck melaporkan kondisi layanan beserta databasenya.

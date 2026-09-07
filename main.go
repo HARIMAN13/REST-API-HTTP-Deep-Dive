@@ -12,6 +12,8 @@ import (
 	"api-students/app/service"
 	"api-students/config"
 	"api-students/database"
+	"api-students/helper"
+	"api-students/route"
 )
 
 // main hanya berisi urutan perakitan. Tidak ada logika bisnis,
@@ -33,8 +35,38 @@ func main() {
 	studentRepository := repository.NewStudentRepository(pool)
 	studentService := service.NewStudentService(studentRepository)
 
+	pr := repository.NewPrestasiRepository(pool)
+	ps := service.NewPrestasiService(pr)
+
+	jwtSecret := config.GetEnv("JWT_SECRET", "")
+	if len(jwtSecret) < 32 {
+		logger.Error("JWT_SECRET tidak diisi atau terlalu pendek",
+			slog.Int("minimal_karakter", 32))
+		os.Exit(1)
+	}
+
+	jwtManager := helper.NewJWTManager(
+		jwtSecret,
+		config.GetEnv("JWT_ISSUER", "praktikum-backend"),
+		time.Duration(config.GetEnvInt("JWT_ACCESS_TTL_MINUTES", 15))*time.Minute,
+	)
+
+	userRepository := repository.NewUserRepository(pool)
+	tokenRepository := repository.NewTokenRepository(pool)
+	authService := service.NewAuthService(
+		userRepository, tokenRepository, jwtManager,
+		time.Duration(config.GetEnvInt("JWT_REFRESH_TTL_DAYS", 7))*24*time.Hour,
+	)
+
 	// 4. Aplikasi
-	app := config.NewApp(logger, pool, studentService)
+	deps := route.Dependencies{
+		Pool:            pool,
+		JWT:             jwtManager,
+		UserService:     studentService,
+		PrestasiService: ps,
+		AuthService:     authService,
+	}
+	app := config.NewApp(logger, deps, config.GetEnv("ALLOWED_ORIGINS", ""))
 
 	port := config.GetEnv("APP_PORT", "3000")
 
