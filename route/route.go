@@ -15,6 +15,7 @@ import (
 type Dependencies struct {
 	Pool            *pgxpool.Pool
 	JWT             *helper.JWTManager
+	Permissions     *helper.PermissionSet
 	UserService     *service.StudentService
 	PrestasiService *service.PrestasiService
 	AuthService     *service.AuthService
@@ -36,13 +37,25 @@ func Register(app *fiber.App, deps Dependencies) {
 
 	// --- wajib membawa access token ---
 	students := api.Group("/students", middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
-	students.Get("/", deps.UserService.List)
+	perms := deps.Permissions
+
+	students.Get("/",
+		middleware.RequirePermission(perms, "student:list"),
+		deps.UserService.List)
+	
 	students.Get("/:id", deps.UserService.Get)
 	students.Get("/:id/prestasi", deps.PrestasiService.ListByStudentID)
-	students.Post("/", deps.UserService.Create)
+
+	students.Post("/",
+		middleware.RequirePermission(perms, "student:create"),
+		deps.UserService.Create)
+
 	students.Put("/:id", deps.UserService.Replace)
 	students.Patch("/:id", deps.UserService.Patch)
-	students.Delete("/:id", deps.UserService.Delete)
+
+	students.Delete("/:id",
+		middleware.RequirePermission(perms, "student:delete"),
+		deps.UserService.Delete)
 }
 
 // healthCheck melaporkan kondisi layanan beserta databasenya.
