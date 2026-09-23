@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// RoleRepository membaca pemetaan role ke permission dari database.
 type RoleRepository interface {
 	LoadPermissions(ctx context.Context) (map[string][]string, error)
 }
@@ -18,7 +17,6 @@ func NewRoleRepository(pool *pgxpool.Pool) RoleRepository {
 	return &rolePostgresRepository{pool: pool}
 }
 
-// LoadPermissions mengambil SELURUH pasangan role dan permission sekaligus.
 func (r *rolePostgresRepository) LoadPermissions(
 	ctx context.Context,
 ) (map[string][]string, error) {

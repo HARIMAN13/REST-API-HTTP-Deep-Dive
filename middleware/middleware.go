@@ -30,7 +30,6 @@ func corsPolicy(allowedOrigins string) fiber.Handler {
 	})
 }
 
-// RequestLogger mencatat setiap request ke log terstruktur.
 func RequestLogger(logger *slog.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
@@ -53,12 +52,11 @@ func RequestLogger(logger *slog.Logger) fiber.Handler {
 			slog.String("request_id", requestID),
 			slog.String("method", c.Method()),
 			slog.String("path", c.Path()),
-			slog.Int("status", status), // FIXED
+			slog.Int("status", status),
 			slog.Duration("duration", time.Since(start)),
 			slog.String("ip", c.IP()),
 		}
 
-		// Identitas ikut dicatat bila request sudah melewati RequireAuth.
 		if user, ok := helper.CurrentUser(c); ok {
 			attrs = append(attrs,
 				slog.Int("user_id", user.UserID),
@@ -77,7 +75,6 @@ var methodsWithBody = map[string]bool{
 	fiber.MethodPatch: true,
 }
 
-// RequireJSON menolak request berisi body yang Content-Type-nya bukan JSON.
 func RequireJSON(c *fiber.Ctx) error {
 	if methodsWithBody[c.Method()] {
 		ct := c.Get("Content-Type")

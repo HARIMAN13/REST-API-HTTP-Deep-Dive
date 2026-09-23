@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"api-students/app/model"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
-	ErrInvalidToken  = errors.New("token tidak valid")
-	ErrExpiredToken  = errors.New("token sudah kedaluwarsa")
+	ErrInvalidToken = errors.New("token tidak valid")
+	ErrExpiredToken = errors.New("token sudah kedaluwarsa")
 )
 
 type accessClaims struct {
@@ -22,9 +22,9 @@ type accessClaims struct {
 }
 
 type JWTManager struct {
-	secret     []byte
-	issuer     string
-	accessTTL  time.Duration
+	secret    []byte
+	issuer    string
+	accessTTL time.Duration
 }
 
 func NewJWTManager(secret, issuer string, accessTTL time.Duration) *JWTManager {

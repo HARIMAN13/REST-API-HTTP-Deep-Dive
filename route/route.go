@@ -24,10 +24,8 @@ type Dependencies struct {
 func Register(app *fiber.App, deps Dependencies) {
 	api := app.Group("/api/v1")
 
-	// --- publik ---
 	api.Get("/health", healthCheck(deps.Pool))
 
-	// --- autentikasi ---
 	auth := api.Group("/auth", middleware.RequireJSON)
 	auth.Post("/register", deps.AuthService.Register)
 	auth.Post("/login", middleware.LoginRateLimiter(), deps.AuthService.Login)
@@ -35,14 +33,13 @@ func Register(app *fiber.App, deps Dependencies) {
 	auth.Post("/logout", deps.AuthService.Logout)
 	auth.Get("/me", middleware.RequireAuth(deps.JWT), deps.AuthService.Me)
 
-	// --- wajib membawa access token ---
 	students := api.Group("/students", middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
 	perms := deps.Permissions
 
 	students.Get("/",
 		middleware.RequirePermission(perms, "student:list"),
 		deps.UserService.List)
-	
+
 	students.Get("/:id", deps.UserService.Get)
 	students.Get("/:id/prestasi", deps.PrestasiService.ListByStudentID)
 
@@ -58,7 +55,6 @@ func Register(app *fiber.App, deps Dependencies) {
 		deps.UserService.Delete)
 }
 
-// healthCheck melaporkan kondisi layanan beserta databasenya.
 func healthCheck(pool *pgxpool.Pool) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.UserContext(), 2*time.Second)

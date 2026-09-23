@@ -2,12 +2,10 @@ package helper
 
 import "sort"
 
-// PermissionSet menyimpan pemetaan role ke daftar permission miliknya.
 type PermissionSet struct {
 	byRole map[string]map[string]struct{}
 }
 
-// NewPermissionSet mengubah hasil query menjadi bentuk yang cepat dicari.
 func NewPermissionSet(raw map[string][]string) *PermissionSet {
 	byRole := make(map[string]map[string]struct{}, len(raw))
 
@@ -22,8 +20,6 @@ func NewPermissionSet(raw map[string][]string) *PermissionSet {
 	return &PermissionSet{byRole: byRole}
 }
 
-// Can menjawab satu pertanyaan: apakah role ini memiliki permission itu.
-// Menggunakan prinsip fail closed.
 func (p *PermissionSet) Can(role, permission string) bool {
 	if p == nil {
 		return false
@@ -38,7 +34,6 @@ func (p *PermissionSet) Can(role, permission string) bool {
 	return granted
 }
 
-// PermissionsOf mengembalikan seluruh permission milik sebuah role, terurut.
 func (p *PermissionSet) PermissionsOf(role string) []string {
 	result := []string{}
 	if p == nil {
@@ -52,7 +47,6 @@ func (p *PermissionSet) PermissionsOf(role string) []string {
 	return result
 }
 
-// KnownRoles mengembalikan daftar role yang dikenal sistem, terurut.
 func (p *PermissionSet) KnownRoles() []string {
 	result := []string{}
 	if p == nil {
@@ -66,7 +60,6 @@ func (p *PermissionSet) KnownRoles() []string {
 	return result
 }
 
-// IsKnownRole dipakai saat memvalidasi permintaan pergantian role.
 func (p *PermissionSet) IsKnownRole(role string) bool {
 	if p == nil {
 		return false

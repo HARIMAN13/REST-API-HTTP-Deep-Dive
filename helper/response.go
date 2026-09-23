@@ -18,7 +18,6 @@ func SuccessList(c *fiber.Ctx, message string, data any, meta *model.Meta) error
 	})
 }
 
-// Created mengirim 201 sekaligus memasang header Location.
 func Created(c *fiber.Ctx, message string, data any, location string) error {
 	c.Set("Location", location)
 	return c.Status(fiber.StatusCreated).JSON(model.WebResponse{

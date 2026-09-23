@@ -67,7 +67,7 @@ func checkPasswordStrength(password string) string {
 
 	weak := map[string]bool{
 		"password1": true, "12345678": true, "qwerty123": true,
-		"admin123":  true, "password123": true,
+		"admin123": true, "password123": true,
 	}
 
 	if weak[strings.ToLower(password)] {
@@ -87,6 +87,6 @@ func isValidUsername(username string) bool {
 }
 
 func isValidEmail(email string) bool {
-	// A simple check for email. For production, a more robust check is needed.
+
 	return strings.Contains(email, "@") && strings.Contains(email, ".")
 }

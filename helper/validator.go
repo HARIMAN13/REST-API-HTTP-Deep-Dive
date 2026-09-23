@@ -9,18 +9,11 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// validate dibuat SEKALI untuk seluruh aplikasi.
-//
-// validator.New() melakukan refleksi dan menyimpan hasilnya dalam cache
-// internal. Membuatnya ulang pada setiap request berarti membuang cache
-// tersebut berkali-kali — mahal dan tidak ada gunanya.
 var validate = newValidator()
 
 func newValidator() *validator.Validate {
 	v := validator.New()
 
-	// Tanpa ini, pesan error menyebut nama field Go ("Username"),
-	// padahal client mengirim dan membaca nama JSON ("username").
 	v.RegisterTagNameFunc(func(field reflect.StructField) string {
 		name := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]
 		if name == "" || name == "-" {
@@ -29,9 +22,6 @@ func newValidator() *validator.Validate {
 		return name
 	})
 
-	// Aturan buatan sendiri. Aturan yang tidak disediakan library tetap
-	// ditulis secara deklaratif sebagai tag, bukan dikembalikan menjadi
-	// pemeriksaan manual yang tersebar di dalam service.
 	_ = v.RegisterValidation("nospace", func(fl validator.FieldLevel) bool {
 		return !strings.ContainsAny(fl.Field().String(), " \t\n\r")
 	})
@@ -47,7 +37,7 @@ func newValidator() *validator.Validate {
 	})
 
 	_ = v.RegisterValidation("strongpassword", func(fl validator.FieldLevel) bool {
-		// FIXED: == "" indicates no error (valid)
+
 		return passwordStrength(fl.Field().String()) == ""
 	})
 
@@ -84,7 +74,7 @@ func passwordStrength(password string) string {
 
 	weak := map[string]bool{
 		"password1": true, "12345678": true, "qwerty123": true,
-		"admin123":  true, "password123": true,
+		"admin123": true, "password123": true,
 	}
 
 	if weak[strings.ToLower(password)] {
@@ -94,17 +84,12 @@ func passwordStrength(password string) string {
 	return ""
 }
 
-// ValidateStruct menjalankan seluruh aturan pada tag struct dan
-// mengembalikan peta nama field ke pesan berbahasa Indonesia.
-// Mengembalikan nil berarti tidak ada pelanggaran.
 func ValidateStruct(s any) map[string]string {
 	err := validate.Struct(s)
 	if err == nil {
 		return nil
 	}
 
-	// Terjadi bila yang dikirim bukan struct — itu kesalahan programmer,
-	// bukan kesalahan pemakai API. Jangan diam-diam dianggap valid.
 	var invalid *validator.InvalidValidationError
 	if errors.As(err, &invalid) {
 		return map[string]string{"_": "objek yang divalidasi tidak sah"}
@@ -125,9 +110,6 @@ func ValidateStruct(s any) map[string]string {
 	return result
 }
 
-// messageFor menerjemahkan nama tag menjadi kalimat yang dapat dibaca
-// pemakai. Daftar ini terpusat: menambah satu tag baru cukup menambah
-// satu case di sini, tidak menyebar ke banyak file.
 func messageFor(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
@@ -153,9 +135,7 @@ func messageFor(fe validator.FieldError) string {
 	case "nim":
 		return "hanya boleh berisi angka"
 	case "strongpassword":
-		// Type assertion memakai bentuk DUA nilai, bukan satu. Bentuk
-		// satu nilai akan panic bila suatu saat tag ini terpasang pada
-		// field bukan string — mematikan server hanya karena salah tag.
+
 		if value, ok := fe.Value().(string); ok {
 			return passwordStrength(value)
 		}
@@ -164,8 +144,7 @@ func messageFor(fe validator.FieldError) string {
 		return "harus salah satu dari: " +
 			strings.ReplaceAll(fe.Param(), " ", ", ")
 	default:
-		// Jaring pengaman. Bila muncul di log, artinya ada tag yang
-		// dipakai tetapi belum diterjemahkan di sini.
+
 		return "tidak memenuhi aturan " + fe.Tag()
 	}
 }

@@ -226,7 +226,6 @@ func (s *StudentService) Delete(c *fiber.Ctx) error {
 	return helper.NoContent(c)
 }
 
-// translateError memetakan error milik repository menjadi AppError.
 func translateError(err error, entity string) error {
 	switch {
 	case errors.Is(err, repository.ErrNotFound):

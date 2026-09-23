@@ -24,7 +24,7 @@ func TestIsEmptyPatch(t *testing.T) {
 	if !IsEmptyPatch(model.PatchStudentRequest{}) {
 		t.Error("struct kosong seharusnya dikenali sebagai empty patch")
 	}
-	
+
 	active := true
 	if IsEmptyPatch(model.PatchStudentRequest{IsActive: &active}) {
 		t.Error("struct dengan satu field seharusnya tidak empty")

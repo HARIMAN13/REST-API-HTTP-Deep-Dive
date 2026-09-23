@@ -13,8 +13,6 @@ import (
 	"api-students/route"
 )
 
-// NewApp merakit aplikasi: membuat instance Fiber, memasang middleware,
-// lalu mendaftarkan route. File ini adalah tempat seluruh bagian bertemu.
 func NewApp(
 	logger *slog.Logger, deps route.Dependencies, allowedOrigins string,
 ) *fiber.App {
@@ -27,7 +25,6 @@ func NewApp(
 	middleware.Register(app, logger, allowedOrigins)
 	route.Register(app, deps)
 
-	// Penampung terakhir untuk URL yang tidak dikenal.
 	app.Use(func(c *fiber.Ctx) error {
 		return helper.NotFound("endpoint tidak ditemukan")
 	})
@@ -35,8 +32,6 @@ func NewApp(
 	return app
 }
 
-// newErrorHandler adalah SATU-SATUNYA tempat error berubah menjadi
-// response HTTP di seluruh aplikasi.
 func newErrorHandler(logger *slog.Logger) fiber.ErrorHandler {
 	return func(c *fiber.Ctx, err error) error {
 		requestID := helper.RequestID(c)
@@ -44,7 +39,7 @@ func newErrorHandler(logger *slog.Logger) fiber.ErrorHandler {
 		var appErr *helper.AppError
 		switch {
 		case errors.As(err, &appErr):
-			// Kegagalan yang sudah kita rencanakan.
+
 		case errors.Is(err, fiber.ErrRequestEntityTooLarge):
 			appErr = &helper.AppError{
 				Status:  fiber.StatusRequestEntityTooLarge,
@@ -52,7 +47,7 @@ func newErrorHandler(logger *slog.Logger) fiber.ErrorHandler {
 				Message: "ukuran body melebihi batas yang diizinkan",
 			}
 		default:
-			// Kegagalan yang tidak kita duga.
+
 			var fiberErr *fiber.Error
 			if errors.As(err, &fiberErr) {
 				appErr = &helper.AppError{
@@ -65,10 +60,6 @@ func newErrorHandler(logger *slog.Logger) fiber.ErrorHandler {
 			}
 		}
 
-		// Hanya kegagalan sisi server yang dicatat sebagai Error.
-		// Kegagalan 4xx adalah kesalahan pemakai API, bukan kerusakan
-		// sistem; mencatatnya sebagai Error membuat log penuh bising
-		// sehingga kerusakan yang sesungguhnya justru tenggelam.
 		if appErr.Status >= fiber.StatusInternalServerError {
 			var errDetail string
 			if unwrapped := appErr.Unwrap(); unwrapped != nil {

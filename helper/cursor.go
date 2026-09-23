@@ -12,25 +12,12 @@ import (
 
 var ErrInvalidCursor = errors.New("cursor tidak valid")
 
-// EncodeCursor mengubah penanda menjadi satu string yang aman di URL.
-//
-// base64 dipakai agar bentuk internalnya dapat kita ubah tanpa mengubah
-// kontrak API. Perlu ditegaskan: base64 adalah PENGKODEAN, bukan
-// enkripsi. Siapa pun dapat membacanya, dan siapa pun dapat menyusun
-// cursor palsu. Karena itu cursor tidak boleh memuat apa pun yang
-// bersifat rahasia atau yang dipercaya sebagai dasar hak akses.
 func EncodeCursor(createdAt time.Time, id int) string {
 	raw := strconv.FormatInt(createdAt.UTC().UnixNano(), 10) +
 		"|" + strconv.Itoa(id)
 	return base64.RawURLEncoding.EncodeToString([]byte(raw))
 }
 
-// DecodeCursor membaca kembali penanda dari string.
-//
-// Seluruh jalur kegagalan mengembalikan error, tidak ada yang "diperbaiki
-// diam-diam". Cursor rusak berarti permintaan client memang salah, dan
-// client berhak tahu itu lewat 400 — bukan diam-diam dikembalikan ke
-// halaman pertama seolah tidak terjadi apa-apa.
 func DecodeCursor(encoded string) (model.Cursor, error) {
 	if strings.TrimSpace(encoded) == "" {
 		return model.Cursor{}, ErrInvalidCursor

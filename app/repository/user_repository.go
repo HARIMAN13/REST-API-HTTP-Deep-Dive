@@ -34,7 +34,7 @@ func (r *userPostgresRepository) Create(ctx context.Context, u model.User) (int,
 	).Scan(&id)
 
 	if err != nil {
-		// pgx duplicate error checking is complex, so we return ErrDuplicate for now if error contains constraint name
+
 		return 0, fmt.Errorf("menyimpan user: %w", err)
 	}
 

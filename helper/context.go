@@ -1,8 +1,8 @@
 package helper
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"api-students/app/model"
+	"github.com/gofiber/fiber/v2"
 )
 
 const LocalsAuthUser = "authUser"

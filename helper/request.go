@@ -11,18 +11,15 @@ import (
 	"api-students/app/model"
 )
 
-// RequestContext memberi timeout untuk setiap operasi database.
 func RequestContext(c *fiber.Ctx) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(c.UserContext(), 5*time.Second)
 }
 
-// RequestID mengambil request id dari context
 func RequestID(c *fiber.Ctx) string {
 	id, _ := c.Locals("requestid").(string)
 	return id
 }
 
-// ParamID membaca parameter :id dari jalur dan memastikan bentuknya benar.
 func ParamID(c *fiber.Ctx) (int, bool) {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil || id < 1 {
@@ -35,7 +32,6 @@ var allowedSort = map[string]bool{
 	"id": true, "nim": true, "name": true, "created_at": true,
 }
 
-// ParseListQuery membaca query string dan memberi nilai bawaan yang aman.
 func ParseListQuery(c *fiber.Ctx) model.ListQuery {
 	q := model.ListQuery{
 		Page:   c.QueryInt("page", 1),
@@ -70,7 +66,6 @@ func ParseListQuery(c *fiber.Ctx) model.ListQuery {
 	return q
 }
 
-// ParseCursorQuery membaca query string untuk pagination berbasis cursor.
 func ParseCursorQuery(c *fiber.Ctx) (model.CursorQuery, error) {
 	q := model.CursorQuery{
 		Limit:  c.QueryInt("limit", 10),

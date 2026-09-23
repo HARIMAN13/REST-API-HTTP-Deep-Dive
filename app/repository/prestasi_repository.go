@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"context"
 	"api-students/app/model"
+	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

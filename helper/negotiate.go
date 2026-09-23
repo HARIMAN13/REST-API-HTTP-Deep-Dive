@@ -15,16 +15,9 @@ const (
 	FormatCSV  = "text/csv"
 )
 
-// Negotiate memilih format response berdasarkan header Accept.
-//
-// Perbedaan yang wajib jelas:
-// - Content-Type menjelaskan format yang SEDANG DIKIRIM pengirim.
-// - Accept menjelaskan format yang DIINGINKAN penerima sebagai balasan.
 func Negotiate(c *fiber.Ctx, offered ...string) (string, error) {
 	accept := strings.TrimSpace(c.Get(fiber.HeaderAccept))
 
-	// Tidak menyebut Accept sama sekali berarti "terserah server".
-	// Demikian pula Accept: */* yang dikirim hampir semua tool CLI.
 	if accept == "" {
 		return offered[0], nil
 	}
@@ -39,10 +32,6 @@ func Negotiate(c *fiber.Ctx, offered ...string) (string, error) {
 	return chosen, nil
 }
 
-// WriteStudentsCSV menuliskan daftar student sebagai CSV.
-//
-// Header Content-Disposition membuat browser menawarkan unduhan alih-alih
-// menampilkan isinya sebagai teks mentah.
 func WriteStudentsCSV(c *fiber.Ctx, students []model.Student) error {
 	c.Set(fiber.HeaderContentType, FormatCSV+"; charset=utf-8")
 	c.Set(fiber.HeaderContentDisposition, `attachment; filename="students.csv"`)
@@ -65,8 +54,7 @@ func WriteStudentsCSV(c *fiber.Ctx, students []model.Student) error {
 			return Internal(err)
 		}
 	}
-	
-	// FIX: missing Flush()
+
 	writer.Flush()
 
 	if err := writer.Error(); err != nil {

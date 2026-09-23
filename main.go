@@ -16,14 +16,11 @@ import (
 	"api-students/route"
 )
 
-// main hanya berisi urutan perakitan. Tidak ada logika bisnis,
-// tidak ada query, dan tidak ada satu pun handler di sini.
 func main() {
-	// 1. Konfigurasi dan logger
+
 	config.LoadEnv()
 	logger := config.NewLogger()
 
-	// 2. Database
 	pool, err := database.NewPool(context.Background())
 	if err != nil {
 		logger.Error("gagal terhubung ke database", slog.String("error", err.Error()))
@@ -41,7 +38,6 @@ func main() {
 	permissions := helper.NewPermissionSet(rawPermissions)
 	logger.Info("permission dimuat", slog.Any("roles", permissions.KnownRoles()))
 
-	// 3. Perakitan dari dalam ke luar: repository -> service
 	studentRepository := repository.NewStudentRepository(pool)
 	studentService := service.NewStudentService(studentRepository, permissions)
 
@@ -69,7 +65,6 @@ func main() {
 		time.Duration(config.GetEnvInt("JWT_REFRESH_TTL_DAYS", 7))*24*time.Hour,
 	)
 
-	// 4. Aplikasi
 	deps := route.Dependencies{
 		Pool:            pool,
 		JWT:             jwtManager,
@@ -91,8 +86,6 @@ func main() {
 
 	logger.Info("server berjalan", slog.String("port", port))
 
-	// 5. Graceful shutdown: tunggu Ctrl+C, lalu beri waktu request
-	//    yang sedang berjalan untuk selesai.
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

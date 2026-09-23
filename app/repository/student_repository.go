@@ -12,7 +12,6 @@ import (
 	"api-students/app/model"
 )
 
-// Sentinel error
 var (
 	ErrNotFound  = errors.New("data tidak ditemukan")
 	ErrDuplicate = errors.New("data sudah ada")
