@@ -15,24 +15,24 @@ type Student struct {
 
 // POST — semua field wajib diisi saat pembuatan data baru
 type CreateStudentRequest struct {
-	NIM   string `json:"nim"`
-	Name  string `json:"name"`
-	Grade string `json:"grade"`
+	NIM   string `json:"nim" validate:"required,nim"`
+	Name  string `json:"name" validate:"required,min=3,max=100"`
+	Grade string `json:"grade" validate:"required,min=1,max=2"`
 }
 
 // PUT — mengganti seluruh isi, jadi semua field wajib
 type ReplaceStudentRequest struct {
-	NIM      string `json:"nim"`
-	Name     string `json:"name"`
-	Grade    string `json:"grade"`
+	NIM      string `json:"nim" validate:"required,nim"`
+	Name     string `json:"name" validate:"required,min=3,max=100"`
+	Grade    string `json:"grade" validate:"required,min=1,max=2"`
 	IsActive bool   `json:"is_active"`
 }
 
 // PATCH — ubah sebagian, field bertipe pointer agar bisa membedakan "tidak dikirim" (nil) dan "kosong"
 type PatchStudentRequest struct {
-	NIM      *string `json:"nim,omitempty"`
-	Name     *string `json:"name,omitempty"`
-	Grade    *string `json:"grade,omitempty"`
+	NIM      *string `json:"nim,omitempty" validate:"omitnil,nim"`
+	Name     *string `json:"name,omitempty" validate:"omitnil,min=3,max=100"`
+	Grade    *string `json:"grade,omitempty" validate:"omitnil,min=1,max=2"`
 	IsActive *bool   `json:"is_active,omitempty"`
 }
 
@@ -41,7 +41,7 @@ type WebResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Data    any    `json:"data,omitempty"`
-	Meta    *Meta  `json:"meta,omitempty"`
+	Meta    any    `json:"meta,omitempty"`
 	Errors  any    `json:"errors,omitempty"`
 }
 

@@ -19,12 +19,12 @@ func (s *PrestasiService) ListByStudentID(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return helper.Fail(c, fiber.StatusBadRequest, "invalid id")
+		return helper.BadRequest("invalid id")
 	}
 
 	data, err := s.r.ListByStudentID(c.UserContext(), id)
 	if err != nil {
-		return helper.Fail(c, fiber.StatusInternalServerError, "err fetch")
+		return helper.Internal(err)
 	}
 	return helper.Success(c, fiber.StatusOK, "ok", data)
 }

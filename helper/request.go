@@ -16,6 +16,12 @@ func RequestContext(c *fiber.Ctx) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(c.UserContext(), 5*time.Second)
 }
 
+// RequestID mengambil request id dari context
+func RequestID(c *fiber.Ctx) string {
+	id, _ := c.Locals("requestid").(string)
+	return id
+}
+
 // ParamID membaca parameter :id dari jalur dan memastikan bentuknya benar.
 func ParamID(c *fiber.Ctx) (int, bool) {
 	id, err := strconv.Atoi(c.Params("id"))
@@ -62,4 +68,36 @@ func ParseListQuery(c *fiber.Ctx) model.ListQuery {
 	}
 
 	return q
+}
+
+// ParseCursorQuery membaca query string untuk pagination berbasis cursor.
+func ParseCursorQuery(c *fiber.Ctx) (model.CursorQuery, error) {
+	q := model.CursorQuery{
+		Limit:  c.QueryInt("limit", 10),
+		Search: strings.TrimSpace(c.Query("search")),
+	}
+
+	if q.Limit < 1 {
+		q.Limit = 10
+	}
+	if q.Limit > 100 {
+		q.Limit = 100
+	}
+
+	if raw := c.Query("is_active"); raw != "" {
+		if v, err := strconv.ParseBool(raw); err == nil {
+			q.IsActive = &v
+		}
+	}
+
+	cursorStr := c.Query("cursor")
+	if cursorStr != "" {
+		cursor, err := DecodeCursor(cursorStr)
+		if err != nil {
+			return q, BadRequest("cursor tidak valid")
+		}
+		q.After = &cursor
+	}
+
+	return q, nil
 }
