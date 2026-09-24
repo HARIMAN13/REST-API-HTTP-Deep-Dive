@@ -42,7 +42,11 @@ func newValidator() *validator.Validate {
 	})
 
 	_ = v.RegisterValidation("nim", func(fl validator.FieldLevel) bool {
-		for _, r := range fl.Field().String() {
+		val := fl.Field().String()
+		if val == "" {
+			return false
+		}
+		for _, r := range val {
 			if !unicode.IsDigit(r) {
 				return false
 			}
