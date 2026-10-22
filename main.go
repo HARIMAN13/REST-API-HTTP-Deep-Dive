@@ -17,7 +17,6 @@ import (
 )
 
 func main() {
-
 	config.LoadEnv()
 	logger := config.NewLogger()
 
@@ -38,11 +37,19 @@ func main() {
 	permissions := helper.NewPermissionSet(rawPermissions)
 	logger.Info("permission dimuat", slog.Any("roles", permissions.KnownRoles()))
 
+	txManager := repository.NewTxManager(pool)
+
 	studentRepository := repository.NewStudentRepository(pool)
 	studentService := service.NewStudentService(studentRepository, permissions)
 
 	pr := repository.NewPrestasiRepository(pool)
 	ps := service.NewPrestasiService(pr)
+
+	courseRepository := repository.NewCourseRepository(pool)
+	courseService := service.NewCourseService(courseRepository, txManager)
+
+	supervisorRepository := repository.NewSupervisorRepository(pool)
+	supervisorService := service.NewSupervisorService(supervisorRepository, txManager)
 
 	jwtSecret := config.GetEnv("JWT_SECRET", "")
 	if len(jwtSecret) < 32 {
@@ -66,12 +73,14 @@ func main() {
 	)
 
 	deps := route.Dependencies{
-		Pool:            pool,
-		JWT:             jwtManager,
-		Permissions:     permissions,
-		UserService:     studentService,
-		PrestasiService: ps,
-		AuthService:     authService,
+		Pool:              pool,
+		JWT:               jwtManager,
+		Permissions:       permissions,
+		UserService:       studentService,
+		PrestasiService:   ps,
+		AuthService:       authService,
+		CourseService:     courseService,
+		SupervisorService: supervisorService,
 	}
 	app := config.NewApp(logger, deps, config.GetEnv("ALLOWED_ORIGINS", ""))
 
