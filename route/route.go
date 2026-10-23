@@ -1,4 +1,4 @@
-package route
+﻿package route
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"api-students/app/service"
 	"api-students/helper"
@@ -14,6 +15,7 @@ import (
 
 type Dependencies struct {
 	Pool              *pgxpool.Pool
+	Mongo             *mongo.Client
 	JWT               *helper.JWTManager
 	Permissions       *helper.PermissionSet
 	UserService       *service.StudentService
@@ -21,12 +23,14 @@ type Dependencies struct {
 	AuthService       *service.AuthService
 	CourseService     *service.CourseService
 	SupervisorService *service.SupervisorService
+	ReviewService     *service.ReviewService
+	PortfolioService  *service.PortfolioService
 }
 
 func Register(app *fiber.App, deps Dependencies) {
 	api := app.Group("/api/v1")
 
-	api.Get("/health", healthCheck(deps.Pool))
+	api.Get("/health", healthCheck(deps.Pool, deps.Mongo))
 
 	auth := api.Group("/auth", middleware.RequireJSON)
 	auth.Post("/register", deps.AuthService.Register)
@@ -56,6 +60,13 @@ func Register(app *fiber.App, deps Dependencies) {
 		middleware.RequirePermission(perms, "student:delete"),
 		deps.UserService.Delete)
 
+	students.Get("/:id/portfolio", deps.PortfolioService.Get)
+	students.Put("/:id/portfolio", deps.PortfolioService.Upsert)
+	students.Post("/:id/portfolio/projects", deps.PortfolioService.AddProject)
+	students.Delete("/:id/portfolio/projects/:projectId", deps.PortfolioService.DeleteProject)
+
+	api.Get("/portfolios/stats/technologies", deps.PortfolioService.TopTechnologies)
+
 	courses := api.Group("/courses",
 		middleware.RequireJSON,
 		middleware.RequireAuth(deps.JWT))
@@ -65,6 +76,19 @@ func Register(app *fiber.App, deps Dependencies) {
 	courses.Post("/:id/enroll", deps.CourseService.Enroll)
 	courses.Delete("/:id/enroll", deps.CourseService.Drop)
 	courses.Patch("/:id", middleware.RequirePermission(perms, "course:manage"), deps.CourseService.UpdateQuota)
+
+	courses.Get("/:id/reviews", deps.ReviewService.ListByCourse)
+	courses.Get("/:id/reviews/summary", deps.ReviewService.Summary)
+	courses.Post("/:id/reviews", deps.ReviewService.Create)
+
+	reviews := api.Group("/reviews",
+		middleware.RequireJSON,
+		middleware.RequireAuth(deps.JWT))
+	reviews.Get("/:id", deps.ReviewService.Get)
+	reviews.Patch("/:id", deps.ReviewService.Update)
+	reviews.Delete("/:id", deps.ReviewService.Delete)
+	reviews.Post("/:id/replies", deps.ReviewService.Reply)
+	reviews.Post("/:id/helpful", deps.ReviewService.MarkHelpful)
 
 	enrollments := api.Group("/enrollments",
 		middleware.RequireJSON,
@@ -85,14 +109,17 @@ func Register(app *fiber.App, deps Dependencies) {
 	supervisions.Post("/switch", middleware.RequirePermission(perms, "supervision:manage"), deps.SupervisorService.Switch)
 }
 
-func healthCheck(pool *pgxpool.Pool) fiber.Handler {
+func healthCheck(pool *pgxpool.Pool, mongoClient *mongo.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.UserContext(), 2*time.Second)
 		defer cancel()
 
 		if err := pool.Ping(ctx); err != nil {
-			return helper.ServiceUnavailable("database tidak dapat dihubungi")
+			return helper.ServiceUnavailable("PostgreSQL tidak dapat dihubungi")
 		}
-		return helper.Success(c, fiber.StatusOK, "server dan database berjalan", nil)
+		if err := mongoClient.Ping(ctx, nil); err != nil {
+			return helper.ServiceUnavailable("MongoDB tidak dapat dihubungi")
+		}
+		return helper.Success(c, fiber.StatusOK, "server, PostgreSQL, dan MongoDB berjalan", nil)
 	}
 }

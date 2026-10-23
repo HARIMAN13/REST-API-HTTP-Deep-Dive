@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"context"
@@ -27,6 +27,19 @@ func main() {
 	}
 	defer pool.Close()
 
+	mongoClient, err := database.NewMongoClient(context.Background())
+	if err != nil {
+		logger.Error("gagal terhubung ke MongoDB", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = mongoClient.Disconnect(ctx)
+	}()
+
+	mongoDB := mongoClient.Database(config.GetEnv("MONGO_DATABASE", "praktikum_backend"))
+
 	roleRepository := repository.NewRoleRepository(pool)
 
 	rawPermissions, err := roleRepository.LoadPermissions(context.Background())
@@ -51,6 +64,20 @@ func main() {
 	supervisorRepository := repository.NewSupervisorRepository(pool)
 	supervisorService := service.NewSupervisorService(supervisorRepository, txManager)
 
+	reviewRepository := repository.NewReviewRepository(mongoDB)
+	if err := reviewRepository.EnsureIndexes(context.Background()); err != nil {
+		logger.Error("gagal membuat index review MongoDB", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	reviewService := service.NewReviewService(reviewRepository, courseRepository, permissions)
+
+	portfolioRepository := repository.NewPortfolioRepository(mongoDB)
+	if err := portfolioRepository.EnsureIndexes(context.Background()); err != nil {
+		logger.Error("gagal membuat index portfolio MongoDB", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	portfolioService := service.NewPortfolioService(portfolioRepository, studentRepository)
+
 	jwtSecret := config.GetEnv("JWT_SECRET", "")
 	if len(jwtSecret) < 32 {
 		logger.Error("JWT_SECRET tidak diisi atau terlalu pendek",
@@ -74,6 +101,7 @@ func main() {
 
 	deps := route.Dependencies{
 		Pool:              pool,
+		Mongo:             mongoClient,
 		JWT:               jwtManager,
 		Permissions:       permissions,
 		UserService:       studentService,
@@ -81,6 +109,8 @@ func main() {
 		AuthService:       authService,
 		CourseService:     courseService,
 		SupervisorService: supervisorService,
+		ReviewService:     reviewService,
+		PortfolioService:  portfolioService,
 	}
 	app := config.NewApp(logger, deps, config.GetEnv("ALLOWED_ORIGINS", ""))
 
