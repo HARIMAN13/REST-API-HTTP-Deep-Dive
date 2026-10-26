@@ -15,11 +15,16 @@ var errCreditLimit = errors.New("batas SKS terlampaui")
 
 type CourseService struct {
 	courses repository.CourseRepository
+	outbox  repository.OutboxRepository
 	tx      *repository.TxManager
 }
 
-func NewCourseService(courses repository.CourseRepository, tx *repository.TxManager) *CourseService {
-	return &CourseService{courses: courses, tx: tx}
+func NewCourseService(
+	courses repository.CourseRepository,
+	outbox repository.OutboxRepository,
+	tx *repository.TxManager,
+) *CourseService {
+	return &CourseService{courses: courses, outbox: outbox, tx: tx}
 }
 
 func (s *CourseService) List(c *fiber.Ctx) error {
@@ -116,6 +121,15 @@ func (s *CourseService) Enroll(c *fiber.Ctx) error {
 			return err
 		}
 
+		if err := s.outbox.WithTx(tx).Insert(ctx, model.EventEnrollmentCreated, model.EnrollmentEvent{
+			UserID:     current.UserID,
+			CourseID:   enrolled.ID,
+			CourseCode: enrolled.Code,
+			CourseName: enrolled.Name,
+		}); err != nil {
+			return err
+		}
+
 		return repo.InsertEnrollment(ctx, courseID, current.UserID)
 	})
 
@@ -152,8 +166,17 @@ func (s *CourseService) Drop(c *fiber.Ctx) error {
 			return err
 		}
 
-		_, err := repo.DecrementEnrolled(ctx, courseID)
-		return err
+		course, err := repo.DecrementEnrolled(ctx, courseID)
+		if err != nil {
+			return err
+		}
+
+		return s.outbox.WithTx(tx).Insert(ctx, model.EventEnrollmentDropped, model.EnrollmentEvent{
+			UserID:     current.UserID,
+			CourseID:   course.ID,
+			CourseCode: course.Code,
+			CourseName: course.Name,
+		})
 	})
 
 	if err != nil {
@@ -231,7 +254,18 @@ func (s *CourseService) Swap(c *fiber.Ctx) error {
 			return err
 		}
 
-		return repo.InsertEnrollment(ctx, req.ToCourseID, current.UserID)
+		if err := repo.InsertEnrollment(ctx, req.ToCourseID, current.UserID); err != nil {
+			return err
+		}
+
+		return s.outbox.WithTx(tx).Insert(ctx, model.EventEnrollmentSwapped, model.EnrollmentEvent{
+			UserID:         current.UserID,
+			CourseID:       to.ID,
+			CourseCode:     to.Code,
+			CourseName:     to.Name,
+			FromCourseCode: from.Code,
+			FromCourseName: from.Name,
+		})
 	})
 
 	if err != nil {
@@ -259,7 +293,23 @@ func (s *CourseService) UpdateQuota(c *fiber.Ctx) error {
 		return helper.Validation(errs)
 	}
 
-	updated, err := s.courses.UpdateQuota(ctx, id, req.Quota, req.Version)
+	var updated model.Course
+	err := s.tx.WithTx(ctx, func(tx repository.DBTX) error {
+		repo := s.courses.WithTx(tx)
+		var err error
+		updated, err = repo.UpdateQuota(ctx, id, req.Quota, req.Version)
+		if err != nil {
+			return err
+		}
+
+		return s.outbox.WithTx(tx).Insert(ctx, model.EventCourseQuotaChanged, model.CourseQuotaChangedEvent{
+			CourseID:   updated.ID,
+			CourseCode: updated.Code,
+			CourseName: updated.Name,
+			NewQuota:   updated.Quota,
+		})
+	})
+
 	if err != nil {
 		return translateCourseError(err)
 	}

@@ -1,4 +1,4 @@
-﻿package repository
+package repository
 
 import (
 	"context"
@@ -31,6 +31,7 @@ type CourseRepository interface {
 	LockCourses(ctx context.Context, ids ...int) error
 	UpdateQuota(ctx context.Context, id, quota, version int) (model.Course, error)
 	IsEnrolled(ctx context.Context, courseID, userID int) (bool, error)
+	FindEnrolledUserIDs(ctx context.Context, courseID int) ([]int, error)
 }
 
 const courseColumns = `id, code, name, credits, quota, enrolled_count, version, created_at`
@@ -228,3 +229,23 @@ func (r *coursePostgresRepository) IsEnrolled(ctx context.Context, courseID, use
 	}
 	return exists, nil
 }
+
+func (r *coursePostgresRepository) FindEnrolledUserIDs(ctx context.Context, courseID int) ([]int, error) {
+	rows, err := r.db.Query(ctx,
+		"SELECT user_id FROM enrollments WHERE course_id = $1 ORDER BY user_id ASC", courseID)
+	if err != nil {
+		return nil, fmt.Errorf("mengambil peserta kelas: %w", err)
+	}
+	defer rows.Close()
+
+	userIDs := []int{}
+	for rows.Next() {
+		var uid int
+		if err := rows.Scan(&uid); err != nil {
+			return nil, fmt.Errorf("membaca user_id peserta: %w", err)
+		}
+		userIDs = append(userIDs, uid)
+	}
+	return userIDs, rows.Err()
+}
+
