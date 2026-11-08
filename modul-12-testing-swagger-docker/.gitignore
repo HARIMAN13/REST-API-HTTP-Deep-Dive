@@ -1,0 +1,7 @@
+.env
+.env.*
+*.exe
+logs/
+*.log
+*.rdb
+coverage.out

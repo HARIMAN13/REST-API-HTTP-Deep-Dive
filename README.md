@@ -21,6 +21,7 @@ Seluruh materi perkuliahan telah ditata secara modular ke dalam direktori masing
 | [📁 `modul-09-transactions-concurrency/`](./modul-09-transactions-concurrency) | **Pertemuan 9: Transactions & Concurrency** | Pengendalian transaksi ACID via `pgx`, mitigasi race condition (*check-then-act*), *atomic update*, *pessimistic locking*, fitur *supervision*, serta dokumentasi pengujian konkurensi. |
 | [📁 `modul-10-api-mongodb/`](./modul-10-api-mongodb) | **Pertemuan 10: Polyglot Persistence (MongoDB)** | Integrasi basis data dokumen NoSQL (MongoDB) mendampingi PostgreSQL untuk menyimpan data portofolio dan review mahasiswa. |
 | [📁 `modul-11-background-jobs/`](./modul-11-background-jobs) | **Pertemuan 11: Background Jobs & Async Processing** | Antrean tugas asinkron dengan Asynq & Redis, Transactional Outbox Pattern, notifikasi kuota matakuliah, outbox relay worker, dan mekanisme redeliver. |
+| [📁 `modul-12-testing-swagger-docker/`](./modul-12-testing-swagger-docker) | **Pertemuan 12: Testing, Swagger & Docker** | Unit test, component test (test double fake), integration test PostgreSQL sungguhan, OpenAPI/Swagger via swag, multi-stage Dockerfile, dan Docker Compose 5-service. |
 
 ---
 
